@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mmt-probe
+  annotations:
+    k8s.v1.cni.cncf.io/networks: monitor-macvlan-net
 spec:
   replicas: 1
   selector:
@@ -42,7 +44,7 @@ spec:
           -Xsecurity.enable=true
           -Xsecurity.ignore-remain-flow=DPI
           -Xsecurity.exclude-rules=0-89,100-1000
-          -Xsecurity.output-channel=stdout,kafka
+          -Xsecurity.output-channel=kafka,stdout
           ; date; done
         resources:
           requests:
