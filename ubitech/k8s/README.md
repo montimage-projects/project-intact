@@ -22,6 +22,8 @@ $ tailscale status
 100.64.0.63     nsit-intact-w0       nsit-intact  linux   -
 ```
 
+**NOTE**: as the worker node's IP is `100.64.0.63`, mmt-operator GUI is accessible at `http://100.64.0.63:30010`
+
 - connect to the worker node using SSH:
 ```
 $ ssh -i .ssh/id_intact montimage@100.64.0.64
