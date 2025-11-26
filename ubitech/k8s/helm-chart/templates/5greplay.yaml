@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: 5greplay
+spec:
+  replicas: {{ .Values.5greplay.replicaCount }}
+  selector:
+    matchLabels:
+      app: 5greplay
+  template:
+    metadata:
+      labels:
+        app: 5greplay
+      annotations:
+        {{- range $key, $value := .Values.5greplay.annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      {{- if .Values.nodeSelector.enabled }}
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.nodeSelector.hostname }}
+      {{- end }}
+      containers:
+      - name: 5greplay
+        image: "{{ .Values.5greplay.image.repository }}:{{ .Values.5greplay.image.tag }}"
+        imagePullPolicy: {{ .Values.5greplay.image.pullPolicy }}
+        command: {{ toJson .Values.5greplay.command }}
+        args: {{ toJson .Values.5greplay.args }}
+        securityContext:
+          capabilities:
+            add:
+              {{- range .Values.5greplay.securityCapabilities.add }}
+              - {{ . }}
+              {{- end }}
