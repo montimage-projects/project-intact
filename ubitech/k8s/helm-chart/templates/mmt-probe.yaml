@@ -35,7 +35,23 @@ spec:
         command: {{ toJson .Values.mmtProbe.deployment.command }}
         args:
           - "-c"
-          - {{ .Values.mmtProbe.deployment.args | quote }}
+          # run nc to listen on UDP port 5000
+          #  then stream data to MMT-Probe
+          - >
+            apt install -y netcat && while true; do
+            date;
+            nc -vlp 5000 | mmt-probe -t-
+            -Xprobe-id=5
+            -Xkafka-output.enable=true
+            -Xkafka-output.hostname=kafka
+            -Xkafka-output.port=9092
+            -Xkafka-output.topic=mmt-reports
+            -Xsession-report.output-channel=kafka
+            -Xsecurity.enable=true
+            -Xsecurity.ignore-remain-flow=DPI
+            -Xsecurity.exclude-rules=0-89,100-1000
+            -Xsecurity.output-channel=kafka,stdout
+            ; date; done
         resources:
 {{ toYaml .Values.mmtProbe.deployment.resources | indent 10 }}
 
