@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: 5greplay
+  name: replay5g
 spec:
-  replicas: {{ .Values.5greplay.replicaCount }}
+  replicas: {{ .Values.replay5g.replicaCount }}
   selector:
     matchLabels:
-      app: 5greplay
+      app: replay5g
   template:
     metadata:
       labels:
-        app: 5greplay
+        app: replay5g
       annotations:
-        {{- range $key, $value := .Values.5greplay.annotations }}
+        {{- range $key, $value := .Values.replay5g.annotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
     spec:
@@ -21,14 +21,14 @@ spec:
         kubernetes.io/hostname: {{ .Values.nodeSelector.hostname }}
       {{- end }}
       containers:
-      - name: 5greplay
-        image: "{{ .Values.5greplay.image.repository }}:{{ .Values.5greplay.image.tag }}"
-        imagePullPolicy: {{ .Values.5greplay.image.pullPolicy }}
-        command: {{ toJson .Values.5greplay.command }}
-        args: {{ toJson .Values.5greplay.args }}
+      - name: replay5g
+        image: "{{ .Values.replay5g.image.repository }}:{{ .Values.replay5g.image.tag }}"
+        imagePullPolicy: {{ .Values.replay5g.image.pullPolicy }}
+        command: {{ toJson .Values.replay5g.command }}
+        args: {{ toJson .Values.replay5g.args }}
         securityContext:
           capabilities:
             add:
-              {{- range .Values.5greplay.securityCapabilities.add }}
+              {{- range .Values.replay5g.securityCapabilities.add }}
               - {{ . }}
               {{- end }}

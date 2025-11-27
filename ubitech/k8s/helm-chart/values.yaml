@@ -8,7 +8,7 @@ nodeSelector:
   hostname: "nsit-intact-w0"
 
 # Configuration for 5greplay deployment
-5greplay:
+replay5g:
   replicaCount: 1
   
   image:
@@ -128,7 +128,7 @@ monitoringPlan:
   enabled: true
 
   name: monitor-macvlan-net
-  namespace: montimage
+  #namespace: montimage
 
   config: |
     {

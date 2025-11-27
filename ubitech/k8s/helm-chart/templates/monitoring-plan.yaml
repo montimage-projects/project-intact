@@ -4,7 +4,7 @@ apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
 metadata:
   name: {{ .Values.monitoringPlan.name }}
-  namespace: {{ .Values.monitoringPlan.namespace }}
+  namespace: {{ if .Values.monitoringPlan.namespace }}{{ .Values.monitoringPlan.namespace }}{{ else }}{{ .Release.Namespace }}{{ end }}
 spec:
   config: {{ .Values.monitoringPlan.config | quote }}
 
