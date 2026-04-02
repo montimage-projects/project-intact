@@ -1,78 +1,98 @@
-# K8s Deployment Notes
+# K8s Deployment Notes (Portable)
 
-This folder contains Kubernetes manifests in `manifest/`, which are copied from the folder `ubitech/k8s/manifest/`, so there may be some environment-specific configurations needed.
-Before installing and testing, review the environment-specific values below.
+This folder contains manifests in `manifest/` copied from `ubitech/k8s/manifest/`.
+To make adaptation easier, each manifest includes inline `CHECK` comments before lines that should be reviewed per infrastructure.
 
-## 1. Check list before installation
+## 1. Choose deployment profile first
 
-### 1.1 Cluster networking prerequisites
-- Multus CNI must be installed (NetworkAttachmentDefinition support).
-- `macvlan` CNI plugin must be available on worker nodes.
-- The host interface in `manifest/monitoring-vlan.yml` is currently `eth0`.
-  - Update it if your nodes use a different NIC name.
-- Static IP in `manifest/monitoring-vlan.yml` is currently `10.100.50.249/29`.
-  - Ensure this address/subnet is valid and free in your infrastructure.
+### 1.1 Profile A: Single-node or no dedicated VLAN network
+- Do not apply `manifest/monitoring-vlan.yml`.
+- In `manifest/5greplay.yml` and `manifest/mmt-probe.yml`, comment/remove the `k8s.v1.cni.cncf.io/networks` annotation.
+- Keep only default Kubernetes pod networking.
 
-### 1.2 Node pinning (hostname)
-Several workloads are pinned to one node using:
-- `kubernetes.io/hostname: nsit-intact-w0`
+### 1.2 Profile B: Multi-node or dedicated monitoring network
+- Apply `manifest/monitoring-vlan.yml`.
+- Ensure Multus and macvlan are installed.
+- Update interface and static IP/subnet in `manifest/monitoring-vlan.yml` for your environment.
 
-This appears in:
-- `manifest/5greplay.yml`
-- `manifest/kafka.yml`
-- `manifest/mongodb.yml`
-- `manifest/mmt-operator.yml`
-- `manifest/mmt-probe.yml`
+### 1.3 Important note for multi-node deployments
+- Multi-node does not automatically require VLAN/macvlan.
+- If default Kubernetes CNI networking is sufficient for your connectivity and test scope, use Profile A even on multi-node clusters.
+- In that case, do not apply `manifest/monitoring-vlan.yml` and comment/remove Multus annotations in `manifest/5greplay.yml` and `manifest/mmt-probe.yml`.
 
-Update this value if your target node hostname is different.
+## 2. Files that must be reviewed before install
 
-### 1.3 Storage path and permissions
-- MongoDB uses hostPath storage at `/tmp/.mmt-database` in `manifest/mongodb.yml`.
-- Verify:
-  - The path exists or can be created.
-  - Node filesystem permissions are sufficient.
-  - You accept hostPath behavior (node-local and non-portable).
+### 2.1 `manifest/5greplay.yml`
+- Optional Multus network annotation.
+- Node selector hostname.
 
-### 1.4 Service exposure and port conflicts
-- `mmt-operator` uses NodePort `30010` in `manifest/mmt-operator.yml`.
-- Ensure this NodePort is allowed and not already in use.
+### 2.2 `manifest/kafka.yml`
+- Node selector hostname (zookeeper and kafka deployments).
+- Kafka `advertised.listeners` if service exposure differs.
 
-### 1.5 Images and pull access
-Verify cluster nodes can pull:
-- `ghcr.io/montimage/5greplay:latest`
-- `ghcr.io/montimage/mmt-operator:v1.7.7`
-- `ghcr.io/montimage/mmt-probe:v1.6.1`
-- `ubuntu/zookeeper:edge`
-- `ubuntu/kafka:edge`
-- `mongo:8`
+### 2.3 `manifest/mmt-operator.yml`
+- Node selector hostname.
+- NodePort value (`30010`) and cluster policy.
 
-## 2. Suggested install order
-Apply manifests in this order:
-1. `manifest/monitoring-vlan.yml`
-2. `manifest/mongodb.yml`
-3. `manifest/kafka.yml`
-4. `manifest/mmt-operator.yml`
-5. `manifest/mmt-probe.yml`
-6. `manifest/5greplay.yml`
+### 2.4 `manifest/mmt-probe.yml`
+- Optional Multus network annotation.
+- Node selector hostname.
 
-Reasons:
-- Network attachment first.
-- Data and messaging dependencies before consumers/producers.
+### 2.5 `manifest/mongodb.yml`
+- hostPath location (`/tmp/.mmt-database`).
+- Node selector hostname.
 
-## 3. Post-install validation
+## 3. Minimal post-install checks
 
-### 3.1 Pods and scheduling
-- Check all pods are Running.
-- Confirm pods are scheduled on expected node if nodeSelector is used.
+1. All pods are Running.
+2. Workloads are scheduled on expected nodes (if nodeSelector remains enabled).
+3. `mmt-operator` reaches `kafka` and `mmt-database`.
+4. `mmt-probe` publishes to Kafka topic `mmt-reports`.
+5. If Profile B is used, confirm Multus/macvlan attachment is present on `mmt-probe` and `5greplay`.
 
-### 3.2 Secondary network attachment
-- Verify `mmt-probe` and `5greplay` got the `monitor-macvlan-net` attachment.
-- Confirm assigned IP matches your expected subnet plan.
+## 4. Usage (traffic replay)
 
-### 3.3 Kafka/Mongo connectivity
-- `mmt-operator` should resolve and connect to `kafka` and `mmt-database` services.
-- `mmt-probe` should publish to Kafka topic `mmt-reports`.
+After deployment is healthy, generate replay traffic from inside the 5greplay pod.
 
-### 3.4 Functional smoke test
-- Send traffic to `mmt` service on port `5000`.
-- Confirm logs/events are produced and consumed end-to-end.
+### 4.1 Enter the 5greplay pod
+1. Get pods and identify the 5greplay pod:
+	 - `kubectl get pods`
+2. Open a shell in the pod:
+	 - `kubectl exec -it <5greplay-pod-name> -- /bin/bash`
+
+### 4.2 Run replay command
+Example command (adapt values to your environment):
+
+```bash
+./5greplay replay \
+	-t pcap/oai.pcap \
+	-Xforward.target-protocols=SCTP \
+	-Xforward.target-ports=38412 \
+	-Xforward.target-hosts=<amf_ip_or_hostname> \
+	-Xforward.nb-copies=1 \
+	-Xforward.default=DROP \
+	-Xforward.bind-ip=<source_ip_reachable_to_target>
+```
+
+### 4.3 Parameters to pay attention to
+- `-Xforward.target-hosts`: destination host(s) receiving replayed packets (for example AMF IP/DNS). Use a reachable endpoint from the 5greplay pod network.
+- `-Xforward.bind-ip`: source IP that 5greplay binds to when opening sockets. This IP must exist on an interface available in the pod network context.
+	- Profile A (no VLAN/Multus): usually do not force this unless required; default routing is often enough.
+	- Profile B (with VLAN/Multus): typically set this to the secondary network IP assigned for replay traffic.
+
+### 4.4 Results
+
+These screenshorts of the test performed on June 19, 2025 in UBITECH's Kubernetes environment targeting the AMF component:
+
+- execution log of 5Greplay
+
+<img src=img/5greplay.png>
+
+- AMF log
+
+<img src=img/amf-log.png>
+
+- Security alerts
+
+<img src=img/security-alerts.png>
+

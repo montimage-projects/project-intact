@@ -27,6 +27,7 @@ spec:
       labels:
         app: zookeeper
     spec:
+      # CHECK: Update/remove nodeSelector based on your node names and scheduling policy.
       nodeSelector:
         kubernetes.io/hostname: nsit-intact-w0
       containers:
@@ -64,6 +65,7 @@ spec:
       labels:
         app: kafka
     spec:
+      # CHECK: Update/remove nodeSelector based on your node names and scheduling policy.
       nodeSelector:
         kubernetes.io/hostname: nsit-intact-w0
       containers:
@@ -77,6 +79,7 @@ spec:
         args: 
         - "/etc/kafka/server.properties"
         - "--override"
+        # CHECK: Keep this if clients access Kafka via service name "kafka" in-cluster; change if exposure strategy differs.
         - "advertised.listeners=PLAINTEXT://kafka:9092"
         # retain messages during 1 hour
         - "--override"

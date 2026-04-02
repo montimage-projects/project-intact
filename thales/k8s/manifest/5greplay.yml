@@ -14,10 +14,12 @@ spec:
         app: 5greplay
       annotations:
         ## Below annotation when pods are in different hosts in the cluster
+        # CHECK: If your cluster does not use Multus/macvlan (for example single-node), comment/remove the next line.
         k8s.v1.cni.cncf.io/networks: monitor-macvlan-net
         ## Below annotation when pods are in same host node
         #k8s.v1.cni.cncf.io/networks: '[{ "name": "n2network-controlplane-free5gc-amf", "namespace": "cp", "ips": [ "10.100.50.249/29" ] }]'
     spec:
+      # CHECK: Update/remove nodeSelector based on your node names and scheduling policy.
       nodeSelector:
         kubernetes.io/hostname: nsit-intact-w0
         #kubernetes.io/hostname: nsit-intact-master 

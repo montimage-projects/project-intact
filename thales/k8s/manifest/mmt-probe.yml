@@ -4,6 +4,7 @@ kind: Deployment
 metadata:
   name: mmt-probe
   annotations:
+    # CHECK: If your cluster does not use Multus/macvlan (for example single-node), comment/remove the next line.
     k8s.v1.cni.cncf.io/networks: monitor-macvlan-net
 spec:
   replicas: 1
@@ -15,6 +16,7 @@ spec:
       labels:
         app: mmt-probe
     spec:
+      # CHECK: Update/remove nodeSelector based on your node names and scheduling policy.
       nodeSelector:
         kubernetes.io/hostname: nsit-intact-w0
       containers:
