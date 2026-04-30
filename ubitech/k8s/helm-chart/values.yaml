@@ -155,8 +155,8 @@ mmtProbe:
       k8s.v1.cni.cncf.io/networks: monitor-macvlan-net
 
     image:
-      repository: ghcr.io/montimage/mmt-probe
-      tag: v1.6.1
+      repository: ghcr.io/montimage-projects/project-intact/mmt-probe
+      tag: v1.6.2-stix
       pullPolicy: Always
 
     env:
