@@ -2,6 +2,44 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# Configuration for NetworkFuzzer deployment
+networkfuzzer:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/montimage/networkfuzzer
+    tag: main
+    pullPolicy: Always
+
+  config:
+    targetHost: "orthanc"
+    targetPort: "4242"
+    calledAe: "ORTHANC"
+    callingAe: "FUZZER"
+    fuzzMode: "hybrid"
+    fuzzAlgo: "PPO"
+    fuzzTimesteps: "50000"
+    fuzzScenario: ""
+
+  storage:
+    size: 5Gi
+    storageClass: "mmt-database-storageclass"
+
+# Configuration for Orthanc DICOM server
+orthanc:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: jodogne/orthanc
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  service:
+    type: NodePort
+    httpNodePort: 30042
+
 # Enable nodeSelector for all deployments
 nodeSelector:
   enabled: true

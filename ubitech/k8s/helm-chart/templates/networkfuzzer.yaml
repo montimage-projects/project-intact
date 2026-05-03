@@ -1,0 +1,72 @@
+{{- if .Values.networkfuzzer.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: networkfuzzer-config
+data:
+  TARGET_HOST: {{ .Values.networkfuzzer.config.targetHost | quote }}
+  TARGET_PORT: {{ .Values.networkfuzzer.config.targetPort | quote }}
+  CALLED_AE:   {{ .Values.networkfuzzer.config.calledAe | quote }}
+  CALLING_AE:  {{ .Values.networkfuzzer.config.callingAe | quote }}
+  FUZZ_MODE:   {{ .Values.networkfuzzer.config.fuzzMode | quote }}
+  FUZZ_ALGO:   {{ .Values.networkfuzzer.config.fuzzAlgo | quote }}
+  FUZZ_TIMESTEPS: {{ .Values.networkfuzzer.config.fuzzTimesteps | quote }}
+  FUZZ_SCENARIO:  {{ .Values.networkfuzzer.config.fuzzScenario | quote }}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: networkfuzzer-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.networkfuzzer.storage.size }}
+  {{- if .Values.networkfuzzer.storage.storageClass }}
+  storageClassName: {{ .Values.networkfuzzer.storage.storageClass }}
+  {{- end }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: networkfuzzer
+spec:
+  replicas: {{ .Values.networkfuzzer.replicaCount }}
+  selector:
+    matchLabels:
+      app: networkfuzzer
+  template:
+    metadata:
+      labels:
+        app: networkfuzzer
+    spec:
+      {{- if .Values.nodeSelector.enabled }}
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.nodeSelector.hostname }}
+      {{- end }}
+      containers:
+      - name: networkfuzzer
+        image: "{{ .Values.networkfuzzer.image.repository }}:{{ .Values.networkfuzzer.image.tag }}"
+        imagePullPolicy: {{ .Values.networkfuzzer.image.pullPolicy }}
+        command: ["/bin/bash"]
+        args: ["-c", "while true; do sleep 60; done"]
+        securityContext:
+          capabilities:
+            add:
+              - NET_ADMIN
+              - NET_RAW
+        envFrom:
+        - configMapRef:
+            name: networkfuzzer-config
+        volumeMounts:
+        - name: fuzzer-data
+          mountPath: /opt/mmt/networkfuzzer/fuzzer/data
+      volumes:
+      - name: fuzzer-data
+        persistentVolumeClaim:
+          claimName: networkfuzzer-data-pvc
+{{- end }}

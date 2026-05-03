@@ -1,0 +1,74 @@
+# NetworkFuzzer — DICOM RL fuzzer
+# Three resources: ConfigMap → PVC → Deployment (keep-alive, manual exec to run fuzz/replay)
+
+---
+# 1. Runtime configuration — edit TARGET_HOST once the DICOM server IP/hostname is known
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: networkfuzzer-config
+data:
+  # Use k8s service name if Orthanc is in-cluster, or an IP for external server
+  TARGET_HOST: "orthanc"
+  TARGET_PORT: "4242"
+  CALLED_AE: "ORTHANC"
+  CALLING_AE: "FUZZER"
+  FUZZ_MODE: "hybrid"       # hybrid | semantic | aggressive | state
+  FUZZ_ALGO: "PPO"          # PPO | DQN
+  FUZZ_TIMESTEPS: "50000"
+  FUZZ_SCENARIO: ""         # empty = all scenarios
+
+---
+# 2. Persistent storage for crashes, pcap, models
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: networkfuzzer-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  # storageClassName: mmt-database-storageclass  # uncomment for nsit-intact cluster
+  # minikube: leave unset — "standard" provisioner handles it
+
+---
+# 3. Deployment — stays alive; exec in to run fuzz or replay
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: networkfuzzer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: networkfuzzer
+  template:
+    metadata:
+      labels:
+        app: networkfuzzer
+      # annotations:
+      #   k8s.v1.cni.cncf.io/networks: monitor-macvlan-net  # for external DICOM server
+    spec:
+      # nodeSelector:
+      #   kubernetes.io/hostname: nsit-intact-w0  # uncomment for production cluster
+      containers:
+      - name: networkfuzzer
+        image: ghcr.io/montimage/networkfuzzer:main
+        imagePullPolicy: Always
+        command: ["/bin/bash"]
+        args: ["-c", "while true; do sleep 60; done"]
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN", "NET_RAW"]
+        envFrom:
+        - configMapRef:
+            name: networkfuzzer-config
+        volumeMounts:
+        - name: fuzzer-data
+          mountPath: /opt/mmt/networkfuzzer/fuzzer/data
+      volumes:
+      - name: fuzzer-data
+        persistentVolumeClaim:
+          claimName: networkfuzzer-data-pvc

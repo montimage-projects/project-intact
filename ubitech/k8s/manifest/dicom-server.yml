@@ -1,0 +1,49 @@
+# Orthanc — DICOM server target for NetworkFuzzer
+# Deploy in-cluster so the fuzzer reaches it via DNS "orthanc:4242"
+# If using an external/real PACS server instead, skip this file and set TARGET_HOST
+# in networkfuzzer-config to the server's IP address.
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orthanc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orthanc
+  template:
+    metadata:
+      labels:
+        app: orthanc
+    spec:
+      # nodeSelector:
+      #   kubernetes.io/hostname: nsit-intact-w0  # uncomment for production cluster
+      containers:
+      - name: orthanc
+        image: jodogne/orthanc:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 4242
+          name: dicom
+        - containerPort: 8042
+          name: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orthanc
+spec:
+  selector:
+    app: orthanc
+  type: NodePort
+  ports:
+  - name: dicom
+    port: 4242
+    targetPort: 4242
+  - name: http
+    port: 8042
+    targetPort: 8042
+    nodePort: 30042   # access Orthanc web UI at http://<minikube-ip>:30042
