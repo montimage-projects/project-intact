@@ -40,7 +40,6 @@ spec:
           -Xkafka-output.hostname=kafka
           -Xkafka-output.port=9092
           -Xkafka-output.topic=mmt-reports
-          -Xsession-report.output-channel=kafka
           -Xsecurity.enable=true
           -Xsecurity.ignore-remain-flow=DPI
           -Xsecurity.exclude-rules=0-89,100-1000
