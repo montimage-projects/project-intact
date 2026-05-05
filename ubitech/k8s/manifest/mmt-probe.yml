@@ -36,6 +36,7 @@ spec:
           date;
           nc -vlp 5000 | mmt-probe -t- 
           -Xprobe-id=5
+          -Xenable-report-version-info=false
           -Xkafka-output.enable=true
           -Xkafka-output.hostname=kafka
           -Xkafka-output.port=9092
