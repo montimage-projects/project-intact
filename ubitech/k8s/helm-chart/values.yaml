@@ -194,7 +194,7 @@ mmtProbe:
 
     image:
       repository: ghcr.io/montimage/mmt-probe
-      tag: v1.6.2
+      tag: v1.6.3
       pullPolicy: Always
 
     env:
