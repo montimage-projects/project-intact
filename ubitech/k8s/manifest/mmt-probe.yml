@@ -19,7 +19,7 @@ spec:
         kubernetes.io/hostname: nsit-intact-w0
       containers:
       - name: mmt-probe
-        image: ghcr.io/montimage/mmt-probe:v1.6.1
+        image: ghcr.io/montimage/mmt-probe:v1.6.2
         imagePullPolicy: Always
         env:
         - name: "MMT_SEC_5G_DOS_NGAP_INITIALUEMESSAGE_MS_LIMIT"
@@ -43,7 +43,7 @@ spec:
           -Xsession-report.output-channel=kafka
           -Xsecurity.enable=true
           -Xsecurity.ignore-remain-flow=DPI
-          -Xsecurity.exclude-rules=0-89,100-1000
+          -Xsecurity.exclude-rules=0-199,230-1000
           -Xsecurity.output-channel=kafka,stdout
           ; date; done
         resources:

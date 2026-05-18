@@ -194,7 +194,7 @@ mmtProbe:
 
     image:
       repository: ghcr.io/montimage/mmt-probe
-      tag: v1.6.1
+      tag: v1.6.2
       pullPolicy: Always
 
     env:
@@ -215,7 +215,7 @@ mmtProbe:
       -Xsession-report.output-channel=kafka
       -Xsecurity.enable=true
       -Xsecurity.ignore-remain-flow=DPI
-      -Xsecurity.exclude-rules=0-89,100-1000
+      -Xsecurity.exclude-rules=0-199,230-1000
       -Xsecurity.output-channel=kafka,stdout
       ; date; done
 

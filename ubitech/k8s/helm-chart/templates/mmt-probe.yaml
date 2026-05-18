@@ -49,7 +49,7 @@ spec:
             -Xsession-report.output-channel=kafka
             -Xsecurity.enable=true
             -Xsecurity.ignore-remain-flow=DPI
-            -Xsecurity.exclude-rules=0-89,100-1000
+            -Xsecurity.exclude-rules=0-199,230-1000
             -Xsecurity.output-channel=kafka,stdout
             ; date; done
         resources:
